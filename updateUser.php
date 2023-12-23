@@ -13,7 +13,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $newPassword = isset($_POST["newPassword"]) ? $_POST["newPassword"] : null;
     $newAge = isset($_POST["newAge"]) ? intval($_POST["newAge"]) : null;
 
-    if ($userID !== null && ($newEmail !== null || $newPassword !== null || $newAge !== null)) {
+    if ($userID !== null || ($newEmail !== null || $newPassword !== null || $newAge !== null)) {
         if ($dbCon) {
             // Kiểm tra xem người dùng có tồn tại không
             $checkQuery = "SELECT * FROM [dbo].[User] WHERE id = ?";
@@ -84,6 +84,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
                         if ($newDataStmt && sqlsrv_execute($newDataStmt)) {
                             $newUserData = sqlsrv_fetch_array($newDataStmt, SQLSRV_FETCH_ASSOC);
+                            $newUserData['profile_image'] = 'http://10.0.2.2/api/' . $newUserData['profile_image'];
                             $response['status'] = 'OK';
                             $response['data'] = $newUserData;
                             $response['message'] = 'User updated successfully';
