@@ -40,19 +40,26 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $updateStmt = sqlsrv_prepare($dbCon, $updateQuery, $updateParams);
 
         if ($updateStmt && sqlsrv_execute($updateStmt)) {
-            $response['status'] = 'OK';
-            $response['data'] = null;
-            $response['message'] = 'Topic updated successfully';
+            // Cập nhật thành công, lấy dữ liệu mới sau khi cập nhật
+            $selectQuery = "SELECT * FROM [dbo].[Topic] WHERE id = ?";
+            $selectParams = array($topicData['topicID']);
+            $selectStmt = sqlsrv_prepare($dbCon, $selectQuery, $selectParams);
+        
+            if ($selectStmt && sqlsrv_execute($selectStmt)) {
+                $updatedTopic = sqlsrv_fetch_array($selectStmt, SQLSRV_FETCH_ASSOC);
+        
+                $response['status'] = 'OK';
+                $response['data'] = $updatedTopic;
+                $response['message'] = 'Topic updated successfully';
+            } else {
+                $response['status'] = 'NOT OK';
+                $response['message'] = 'Error fetching updated topic: ' . print_r(sqlsrv_errors(), true);
+            }
+        
+            sqlsrv_free_stmt($selectStmt);
         } else {
             $response['status'] = 'NOT OK';
             $response['message'] = 'Error executing topic update query: ' . print_r(sqlsrv_errors(), true);
-
-            // In ra câu lệnh SQL để kiểm tra
-            echo "SQL Query: $updateQuery\n";
-
-            // In ra dữ liệu đầu vào để kiểm tra
-            echo "Input data: ";
-            print_r($updateParams);
         }
 
         if ($dbCon) {

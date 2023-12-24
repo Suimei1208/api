@@ -42,16 +42,28 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
                     // Thực hiện câu lệnh UPDATE
                     $updateStmt = sqlsrv_prepare($dbCon, $updateQuery, $updateParams);
-
                     if ($updateStmt && sqlsrv_execute($updateStmt)) {
-                        $response['status'] = 'OK';
-                        $response['data'] = null;
-                        $response['message'] = 'Vocabulary updated successfully';
+                        // Cập nhật thành công, lấy dữ liệu mới sau khi cập nhật
+                        $selectQuery = "SELECT * FROM [dbo].[Vocabulary] WHERE vocabID = ?";
+                        $selectParams = array($vocabID);
+                        $selectStmt = sqlsrv_prepare($dbCon, $selectQuery, $selectParams);
+                    
+                        if ($selectStmt && sqlsrv_execute($selectStmt)) {
+                            $updatedVocabulary = sqlsrv_fetch_array($selectStmt, SQLSRV_FETCH_ASSOC);
+                    
+                            $response['status'] = 'OK';
+                            $response['data'] = $updatedVocabulary;
+                            $response['message'] = 'Vocabulary updated successfully';
+                        } else {
+                            $response['status'] = 'NOT OK';
+                            $response['message'] = 'Error fetching updated vocabulary: ' . print_r(sqlsrv_errors(), true);
+                        }
+                    
+                        sqlsrv_free_stmt($selectStmt);
                     } else {
                         $response['status'] = 'NOT OK';
                         $response['message'] = 'Error executing vocabulary update query: ' . print_r(sqlsrv_errors(), true);
                     }
-                    sqlsrv_free_stmt($updateStmt);
                 } else {
                     $response['status'] = 'NOT OK';
                     $response['message'] = 'Invalid vocabID. Vocabulary not found.';
