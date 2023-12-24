@@ -32,8 +32,8 @@
 
                         if ($insertStmt && sqlsrv_execute($insertStmt)) {
                             // Lấy dữ liệu của chủ đề vừa được tạo
-                            $selectQuery = "SELECT * FROM [dbo].[Topic] WHERE topicName = ?";
-                            $selectParams = array($topicName);
+                            $selectQuery = "SELECT * FROM [dbo].[Topic] WHERE topicName = ? AND ownerID = ?";
+                            $selectParams = array($topicName, $ownerID);
                             $selectStmt = sqlsrv_prepare($dbCon, $selectQuery, $selectParams);
 
                             if ($selectStmt && sqlsrv_execute($selectStmt)) {
