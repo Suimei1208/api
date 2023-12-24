@@ -7,7 +7,7 @@ $response = array();
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $folderID = isset($_POST["folderID"]) ? intval($_POST["folderID"]) : null;
-    $nameID = isset($_POST["nameID"]) ? $_POST["nameID"] : null;
+    $folderName = isset($_POST["folderName"]) ? $_POST["folderName"] : null;
     $folderDescription = isset($_POST["folderDescription"]) ? $_POST["folderDescription"] : null;
 
     if ($folderID !== null) {
@@ -15,9 +15,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $updateQuery = "UPDATE [dbo].[Folder] SET ";
             $updateParams = array();
 
-            if ($nameID !== null) {
-                $updateQuery .= "nameID = ?, ";
-                $updateParams[] = $nameID;
+            if ($folderName !== null) {
+                $updateQuery .= "folderName = ?, ";
+                $updateParams[] = $folderName;
             }
 
             if ($folderDescription !== null) {

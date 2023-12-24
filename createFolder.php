@@ -7,13 +7,13 @@ $response = array();
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $userID = isset($_POST["userID"]) ? $_POST["userID"] : null;
-    $nameID = isset($_POST["nameID"]) ? $_POST["nameID"] : null;
+    $folderName = isset($_POST["folderName"]) ? $_POST["folderName"] : null;
     $folderDescription = isset($_POST["folderDescription"]) ? $_POST["folderDescription"] : null;
 
     if ($userID !== null) {
         if ($dbCon) {
-            $insertQuery = "INSERT INTO [dbo].[Folder] (userID, nameID, folderDescription) VALUES (?, ?, ?)";
-            $insertParams = array($userID, $nameID, $folderDescription);
+            $insertQuery = "INSERT INTO [dbo].[Folder] (userID, folderName, folderDescription) VALUES (?, ?, ?)";
+            $insertParams = array($userID, $folderName, $folderDescription);
 
             $insertStmt = sqlsrv_prepare($dbCon, $insertQuery, $insertParams);
 
