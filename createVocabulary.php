@@ -25,14 +25,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
                 if ($existingTopic) {
                     // Thực hiện câu lệnh INSERT để thêm từ vựng mới
-                    $insertQuery = "INSERT INTO [dbo].[Vocabulary] (vocabulary, meaning, topicID) VALUES (?, ?, ?)";
-                    $insertParams = array($vocabularyData['vocabulary'], $vocabularyData['meaning'], $vocabularyData['topicID']);
+                    $insertQuery = "INSERT INTO [dbo].[Vocabulary] (vocabulary, meaning, topicID) VALUES (?, N'" . $vocabularyData['meaning'] . "', ?)";
+                    $insertParams = array($vocabularyData['vocabulary'], $vocabularyData['topicID']);
                     $insertStmt = sqlsrv_prepare($dbCon, $insertQuery, $insertParams);
 
                     if ($insertStmt && sqlsrv_execute($insertStmt)) {
                         // Lấy dữ liệu của từ vựng vừa được tạo
-                        $selectQuery = "SELECT * FROM [dbo].[Vocabulary] WHERE vocabulary = ? AND meaning = ? AND topicID = ?";
-                        $selectParams = array($vocabularyData['vocabulary'], $vocabularyData['meaning'], $vocabularyData['topicID']);
+                        $selectQuery = "SELECT * FROM [dbo].[Vocabulary] WHERE vocabulary = ? AND meaning = N'" . $vocabularyData['meaning'] . "' AND topicID = ?";
+                        $selectParams = array($vocabularyData['vocabulary'], $vocabularyData['topicID']);
                         $selectStmt = sqlsrv_prepare($dbCon, $selectQuery, $selectParams);
 
                         if ($selectStmt && sqlsrv_execute($selectStmt)) {
