@@ -19,6 +19,7 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
                 $userData = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
 
                 if ($userData) {
+                    $userData['profile_image'] = 'http://10.0.2.2/api/' . $userData['profile_image'];
                     $response['status'] = 'OK';
                     $response['data'] = $userData;
                     $response['message'] = 'User retrieved successfully';
