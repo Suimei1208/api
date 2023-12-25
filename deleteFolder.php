@@ -5,39 +5,63 @@ require_once('connection.php');
 
 $response = array();
 
-function deleteFolder($dbCon, $folderId) {
-    $deleteQuery = "DELETE FROM [dbo].[Folder] WHERE folderID = ?";
-    $deleteParams = array($folderId);
-
-    $deleteStmt = sqlsrv_prepare($dbCon, $deleteQuery, $deleteParams);
-
-    if ($deleteStmt && sqlsrv_execute($deleteStmt)) {
-        return true; // Xóa thành công
-    } else {
-        // In chi tiết lỗi SQL
-        if ($deleteStmt) {
-            die(print_r(sqlsrv_errors(), true));
-        }
-        return false; // Lỗi khi xóa
-    }
-}
-
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $folderId = isset($_POST["folder_id"]) ? $_POST["folder_id"] : null;
+    $folderID = isset($_POST["folderID"]) ? $_POST["folderID"] : null;
 
-    if ($folderId !== null) {
+    if ($folderID !== null) {
         if ($dbCon) {
-            $deleteResult = deleteFolder($dbCon, $folderId);
+            // Trước tiên, xóa FolderDetail liên quan đến folderID
+            $deleteFolderDetailQuery = "DELETE FROM [dbo].[FolderDetail] WHERE folderID = ?";
+            $deleteFolderDetailParams = array($folderID);
+            $deleteFolderDetailStmt = sqlsrv_prepare($dbCon, $deleteFolderDetailQuery, $deleteFolderDetailParams);
 
-            if ($deleteResult) {
-                $response['status'] = 'OK';
-                $response['message'] = 'Folder deleted successfully';
+            if ($deleteFolderDetailStmt && sqlsrv_execute($deleteFolderDetailStmt)) {
+                // Lấy danh sách topicID từ FolderDetail
+                $getTopicIDsQuery = "SELECT topicID FROM [dbo].[FolderDetail] WHERE folderID = ?";
+                $getTopicIDsParams = array($folderID);
+                $getTopicIDsStmt = sqlsrv_prepare($dbCon, $getTopicIDsQuery, $getTopicIDsParams);
+
+                if ($getTopicIDsStmt && sqlsrv_execute($getTopicIDsStmt)) {
+                    while ($row = sqlsrv_fetch_array($getTopicIDsStmt, SQLSRV_FETCH_ASSOC)) {
+                        $topicID = $row['topicID'];
+
+                        // Xóa các bản ghi trong bảng Topic liên quan đến topicID
+                        $deleteTopicQuery = "DELETE FROM [dbo].[Topic] WHERE id = ?";
+                        $deleteTopicParams = array($topicID);
+                        $deleteTopicStmt = sqlsrv_prepare($dbCon, $deleteTopicQuery, $deleteTopicParams);
+
+                        if ($deleteTopicStmt && sqlsrv_execute($deleteTopicStmt)) {
+                            // Tiến hành xóa Folder sau khi xóa thành công FolderDetail và Topic
+                            $deleteFolderQuery = "DELETE FROM [dbo].[Folder] WHERE folderID = ?";
+                            $deleteFolderParams = array($folderID);
+                            $deleteFolderStmt = sqlsrv_prepare($dbCon, $deleteFolderQuery, $deleteFolderParams);
+
+                            if ($deleteFolderStmt && sqlsrv_execute($deleteFolderStmt)) {
+                                $response['status'] = 'OK';
+                                $response['data'] = null;
+                                $response['message'] = 'Folder and related items deleted successfully';
+                            } else {
+                                $response['status'] = 'NOT OK';
+                                $response['message'] = 'Error executing folder deletion query: ' . print_r(sqlsrv_errors(), true);
+                            }
+                            sqlsrv_free_stmt($deleteFolderStmt);
+                        } else {
+                            $response['status'] = 'NOT OK';
+                            $response['message'] = 'Error executing topic deletion query: ' . print_r(sqlsrv_errors(), true);
+                        }
+                        sqlsrv_free_stmt($deleteTopicStmt);
+                    }
+                } else {
+                    $response['status'] = 'NOT OK';
+                    $response['message'] = 'Error getting topicIDs: ' . print_r(sqlsrv_errors(), true);
+                }
+                sqlsrv_free_stmt($getTopicIDsStmt);
             } else {
                 $response['status'] = 'NOT OK';
-                $response['message'] = 'Error deleting folder';
+                $response['message'] = 'Error executing folder detail deletion query: ' . print_r(sqlsrv_errors(), true);
             }
+            sqlsrv_free_stmt($deleteFolderDetailStmt);
 
-            // Đóng kết nối
             if ($dbCon) {
                 sqlsrv_close($dbCon);
             }
@@ -47,12 +71,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
     } else {
         $response['status'] = 'NOT OK';
-        $response['message'] = 'Invalid folder_id received';
+        $response['message'] = 'Invalid data received';
     }
 } else {
     $response['status'] = 'NOT OK';
     $response['message'] = 'Invalid request method';
 }
 
-echo json_encode($response);
+if (!isset($response['data'])) {
+    $response['data'] = null;
+}
+
+echo json_encode(array('status' => $response['status'], 'data' => $response['data'], 'message' => $response['message']));
 ?>
