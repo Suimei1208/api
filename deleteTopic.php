@@ -1,66 +1,71 @@
-<?php 
-    header('Content-Type: application/json');
+<?php
+header('Content-Type: application/json');
 
-    require_once('connection.php');
+require_once('connection.php');
 
-    $response = array();
+$response = array();
 
-    if ($_SERVER["REQUEST_METHOD"] == "POST") {
-        $topicName = isset($_POST["topicName"]) ? $_POST["topicName"] : null;
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $topicid = isset($_POST["topicid"]) ? $_POST["topicid"] : null;
 
-        if ($topicName !== null) {
-            if ($dbCon) {
-                $checkQuery = "SELECT * FROM [dbo].[Topic] WHERE topicName = ?";
-                $checkParams = array($topicName);
-                $checkStmt = sqlsrv_prepare($dbCon, $checkQuery, $checkParams);
+    if ($topicid !== null) {
+        if ($dbCon) {
+            // Trước khi xóa chủ đề, xóa từ vựng liên quan trong bảng Vocabulary
+            $deleteVocabularyQuery = "DELETE FROM [dbo].[Vocabulary] WHERE topicID = ?";
+            $deleteVocabularyParams = array($topicid);
+            $deleteVocabularyStmt = sqlsrv_prepare($dbCon, $deleteVocabularyQuery, $deleteVocabularyParams);
 
-                if ($checkStmt && sqlsrv_execute($checkStmt)) {
-                    $existingTopic = sqlsrv_fetch_array($checkStmt, SQLSRV_FETCH_ASSOC);
+            if ($deleteVocabularyStmt && sqlsrv_execute($deleteVocabularyStmt)) {
+                // Sau khi xóa từ vựng, xóa các chi tiết của chủ đề trong bảng TopicDetail
+                $deleteDetailQuery = "DELETE FROM [dbo].[TopicDetail] WHERE TopicID = ?";
+                $deleteDetailParams = array($topicid);
+                $deleteDetailStmt = sqlsrv_prepare($dbCon, $deleteDetailQuery, $deleteDetailParams);
 
-                    if ($existingTopic) {
-                        $deleteQuery = "DELETE FROM [dbo].[Topic] WHERE topicName = ?";
-                        $deleteParams = array($topicName);
+                if ($deleteDetailStmt && sqlsrv_execute($deleteDetailStmt)) {
+                    // Tiến hành xóa chủ đề sau khi đã xóa các chi tiết và từ vựng thành công
+                    $deleteTopicQuery = "DELETE FROM [dbo].[Topic] WHERE id = ?";
+                    $deleteTopicParams = array($topicid);
+                    $deleteTopicStmt = sqlsrv_prepare($dbCon, $deleteTopicQuery, $deleteTopicParams);
 
-                        $deleteStmt = sqlsrv_prepare($dbCon, $deleteQuery, $deleteParams);
-
-                        if ($deleteStmt && sqlsrv_execute($deleteStmt)) {
-                            $response['status'] = 'OK';
-                            $response['data'] = null;
-                            $response['message'] = 'Topic deleted successfully';
-                        } else {
-                            $response['status'] = 'NOT OK';
-                            $response['message'] = 'Error executing topic deletion query';
-                        }
-                        sqlsrv_free_stmt($deleteStmt);
-                    } else {
-                        $response['status'] = 'Invalid';
+                    if ($deleteTopicStmt && sqlsrv_execute($deleteTopicStmt)) {
+                        $response['status'] = 'OK';
                         $response['data'] = null;
-                        $response['message'] = 'Topic not found';
+                        $response['message'] = 'Topic and details deleted successfully';
+                    } else {
+                        $response['status'] = 'NOT OK';
+                        $response['message'] = 'Error executing topic deletion query: ' . print_r(sqlsrv_errors(), true);
                     }
-                    sqlsrv_free_stmt($checkStmt);
+                    sqlsrv_free_stmt($deleteTopicStmt);
                 } else {
                     $response['status'] = 'NOT OK';
-                    $response['message'] = 'Error checking existing topic';
+                    $response['message'] = 'Error executing topic detail deletion query: ' . print_r(sqlsrv_errors(), true);
                 }
-
-                if ($dbCon) {
-                    sqlsrv_close($dbCon);
-                }
+                sqlsrv_free_stmt($deleteDetailStmt);
             } else {
                 $response['status'] = 'NOT OK';
-                $response['message'] = 'Error connecting to SQL Server';
+                $response['message'] = 'Error executing vocabulary deletion query: ' . print_r(sqlsrv_errors(), true);
+            }
+            sqlsrv_free_stmt($deleteVocabularyStmt);
+
+            if ($dbCon) {
+                sqlsrv_close($dbCon);
             }
         } else {
             $response['status'] = 'NOT OK';
-            $response['message'] = 'Invalid data received';
+            $response['message'] = 'Error connecting to SQL Server';
         }
     } else {
         $response['status'] = 'NOT OK';
-        $response['message'] = 'Invalid request method';
+        $response['message'] = 'Invalid data received';
     }
+} else {
+    $response['status'] = 'NOT OK';
+    $response['message'] = 'Invalid request method';
+}
 
-    if (!isset($response['data'])) {
-        $response['data'] = null;
-    }
-    echo json_encode(array('status' => $response['status'], 'data' => $response['data'], 'message' => $response['message']));
+if (!isset($response['data'])) {
+    $response['data'] = null;
+}
+
+echo json_encode(array('status' => $response['status'], 'data' => $response['data'], 'message' => $response['message']));
 ?>
