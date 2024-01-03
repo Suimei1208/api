@@ -11,16 +11,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     if ($folderID !== null && $dbCon) {
         $query = "
-            SELECT DISTINCT [Topic].[topicID], [Topic].[topicName]
+            SELECT DISTINCT [Topic].[id], [Topic].[topicName]
             FROM [dbo].[Topic]
-            LEFT JOIN [dbo].[FolderDetail] ON [Topic].[topicID] = [FolderDetail].[topicID] AND [FolderDetail].[folderID] = ?
+            LEFT JOIN [dbo].[FolderDetail] ON [Topic].[id] = [FolderDetail].[topicID] AND [FolderDetail].[folderID] = ?
             WHERE [FolderDetail].[topicID] IS NULL;
         ";
 
         $params = array($folderID);
         $stmt = sqlsrv_query($dbCon, $query, $params);
 
-        if ($stmt) {
+        if ($stmt === false) {
+            // Handle query execution error
+            $response['status'] = 'NOT OK';
+            $response['message'] = 'Error executing query: ' . print_r(sqlsrv_errors(), true);
+        } else {
             $topics = array();
 
             while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
@@ -30,12 +34,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $response['status'] = 'OK';
             $response['data'] = $topics;
             $response['message'] = 'Topics retrieved successfully';
-        } else {
-            $response['status'] = 'NOT OK';
-            $response['message'] = 'Error executing query: ' . print_r(sqlsrv_errors(), true);
+
+            // Free the statement only if it's a valid resource
+            if (is_resource($stmt)) {
+                sqlsrv_free_stmt($stmt);
+            }
         }
 
-        sqlsrv_free_stmt($stmt);
         sqlsrv_close($dbCon);
     } else {
         $response['status'] = 'NOT OK';
