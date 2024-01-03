@@ -26,11 +26,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         $topicID = $row['topicID'];
 
                         // Xóa các bản ghi trong bảng Topic liên quan đến topicID
-                        $deleteTopicQuery = "DELETE FROM [dbo].[Topic] WHERE id = ?";
-                        $deleteTopicParams = array($topicID);
-                        $deleteTopicStmt = sqlsrv_prepare($dbCon, $deleteTopicQuery, $deleteTopicParams);
+                        // $deleteTopicQuery = "DELETE FROM [dbo].[Topic] WHERE id = ?";
+                        // $deleteTopicParams = array($topicID);
+                        // $deleteTopicStmt = sqlsrv_prepare($dbCon, $deleteTopicQuery, $deleteTopicParams);
 
-                        if ($deleteTopicStmt && sqlsrv_execute($deleteTopicStmt)) {
+                        // if ($deleteTopicStmt && sqlsrv_execute($deleteTopicStmt)) {
                             // Tiến hành xóa Folder sau khi xóa thành công FolderDetail và Topic
                             $deleteFolderQuery = "DELETE FROM [dbo].[Folder] WHERE folderID = ?";
                             $deleteFolderParams = array($folderID);
@@ -44,12 +44,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                                 $response['status'] = 'NOT OK';
                                 $response['message'] = 'Error executing folder deletion query: ' . print_r(sqlsrv_errors(), true);
                             }
-                            sqlsrv_free_stmt($deleteFolderStmt);
-                        } else {
-                            $response['status'] = 'NOT OK';
-                            $response['message'] = 'Error executing topic deletion query: ' . print_r(sqlsrv_errors(), true);
-                        }
-                        sqlsrv_free_stmt($deleteTopicStmt);
+                        //     sqlsrv_free_stmt($deleteFolderStmt);
+                        // } else {
+                        //     $response['status'] = 'NOT OK';
+                        //     $response['message'] = 'Error executing topic deletion query: ' . print_r(sqlsrv_errors(), true);
+                        // }
+                        // sqlsrv_free_stmt($deleteTopicStmt);
                     }
                 } else {
                     $response['status'] = 'NOT OK';

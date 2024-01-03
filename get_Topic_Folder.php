@@ -28,6 +28,7 @@ if ( $_SERVER["REQUEST_METHOD"] == "POST") {
                         'description' => $row['description'],
                         'isPublic' => $row['isPublic'],
                         'ownerID' => $row['ownerID'],
+                        'vocabularyCount' => $row['vocabularyCount'],
                         'folderID' => $folderID
                     );
 
